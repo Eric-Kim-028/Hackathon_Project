@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Way Home | Get home safely</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true">↗</span> way home</a>
+      <nav aria-label="Main navigation"><a href="index.html">Notify</a><a href="drinks.html">Drinks &amp; check-in</a><a aria-current="page" href="transport.html">Get home</a></nav>
+    </header>
+    <main>
+      <div class="eyebrow">04 / Find your way</div>
+      <h1>Let's get you home.</h1>
+      <p class="lead">Choose a sober ride or search Google Maps for nearby transportation. You don't need to complete the check-in first.</p>
+      <div class="grid">
+        <section class="card soft">
+          <h2>Request a ride</h2>
+          <p>Open Uber to choose your pickup and destination. Uber handles driver matching and ride confirmation.</p>
+          <a class="button dark" href="https://m.uber.com/go/home?marketing_vistor_id=7db13235-b15a-43a5-a75c-8304fd1de34e&amp;uclick_id=2bca3c75-97f8-47c1-a654-25a5f0aeede1%2Fen" target="_blank" rel="noopener noreferrer">Open Uber ↗</a>
+        </section>
+        <section class="card">
+          <h2>Find public transportation</h2>
+          <p class="muted">Google Maps can search for transit near you and show available routes.</p>
+          <a class="button" href="https://www.google.com/maps/search/?api=1&amp;query=public+transportation+near+me" target="_blank" rel="noopener noreferrer">Search nearby transit on Google Maps ↗</a>
+          <form class="directions" action="https://www.google.com/maps/dir/" method="get" target="_blank" rel="noopener noreferrer">
+            <input type="hidden" name="api" value="1">
+            <input type="hidden" name="travelmode" value="transit">
+            <label>Destination <input name="destination" required placeholder="Enter your home address or destination"></label>
+            <button class="button secondary" type="submit">Get transit directions ↗</button>
+          </form>
+          <p class="hint">These links open Google Maps, which may request your location. Routes and availability depend on your area.</p>
+        </section>
+      </div>
+    </main>
+    <footer>If you've been drinking, don't drive. Ask a trusted person for help if a ride or transit isn't available.</footer>
+  </div>
+</body>
+</html>

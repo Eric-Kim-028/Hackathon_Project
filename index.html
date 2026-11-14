@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Way Home | Let someone know</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true">↗</span> way home</a>
+      <nav aria-label="Main navigation"><a aria-current="page" href="index.html">Notify</a><a href="drinks.html">Drinks &amp; check-in</a><a href="transport.html">Get home</a></nav>
+    </header>
+    <main>
+      <div class="eyebrow">01 / Make a plan</div>
+      <h1>Let someone know.</h1>
+      <p class="lead">Tell a trusted friend or family member that you'll be drinking, then make a plan for a sober ride home.</p>
+      <div class="grid">
+        <section class="card">
+          <h2>Send a heads-up</h2>
+          <p class="muted">We'll send an email from the Gmail account configured on this computer. Only notify people you know and have permission to contact.</p>
+          <form id="notify-form">
+            <label>Your name <input id="name" required maxlength="80" autocomplete="name" placeholder="How should we sign the message?"></label>
+            <label>Friends' or family's email addresses <textarea id="emails" required rows="3" placeholder="friend@example.com, family@example.com"></textarea></label>
+            <p class="hint">Separate addresses with commas or new lines. Up to 10 recipients.</p>
+            <div class="notice"><strong>Message preview</strong><br><span id="preview">Someone</span> wanted to let you know they will be drinking alcohol. Please check in with them and help them get home safely.</div>
+            <button id="send" class="button" type="submit">Send notification</button>
+            <p id="status" class="status" role="status" aria-live="polite"></p>
+          </form>
+          <a class="button secondary" href="drinks.html">Continue to drinks &amp; check-in →</a>
+          <p class="hint">You can continue without sending. The app cannot verify that recipients read the message.</p>
+        </section>
+        <aside class="card soft">
+          <h2>Start with a safe plan</h2>
+          <p>There's no test on this site that can tell you it's safe to drive. If you've been drinking, use a sober ride or public transportation.</p>
+          <a class="button dark" href="transport.html">Find a ride home →</a>
+          <details>
+            <summary>Gmail setup</summary>
+            <p>Automatic email requires the local server and a Gmail <a href="https://support.google.com/accounts/answer/185833" target="_blank" rel="noopener noreferrer">app password</a> (usually requires 2-Step Verification). Don't enter your password on this page.</p>
+            <p>In PowerShell, from this project folder, run:</p>
+            <pre>npm install
+$env:GMAIL_ADDRESS = "you@gmail.com"
+$secure = Read-Host "Gmail app password" -AsSecureString
+$env:GMAIL_APP_PASSWORD = [System.Net.NetworkCredential]::new("", $secure).Password
+npm start</pre>
+            <p>Then open <a href="http://127.0.0.1:3000">http://127.0.0.1:3000</a>. Keep the terminal open while using the app. Use a private computer and never commit or share the app password.</p>
+          </details>
+        </aside>
+      </div>
+    </main>
+    <footer>Way Home is not a medical, legal, or sobriety assessment. If you've been drinking, choose a sober ride.</footer>
+  </div>
+  <script>
+    const form = document.getElementById('notify-form');
+    const nameInput = document.getElementById('name');
+    const status = document.getElementById('status');
+    const send = document.getElementById('send');
+    nameInput.addEventListener('input', () => {
+      document.getElementById('preview').textContent = nameInput.value.trim() || 'Someone';
+    });
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const name = nameInput.value.trim();
+      const emails = document.getElementById('emails').value.split(/[,\n]+/).map((value) => value.trim()).filter(Boolean);
+      if (!name || /[\r\n]/.test(name) || emails.length === 0 || emails.length > 10 || emails.some((email) => !/^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,63}$/.test(email))) {
+        status.textContent = 'Enter your name and 1–10 valid email addresses, separated by commas or new lines.';
+        return;
+      }
+      if (location.protocol === 'file:') {
+        status.textContent = 'Start the local server using Gmail setup, then open http://127.0.0.1:3000 to send email.';
+        return;
+      }
+      send.disabled = true;
+      status.textContent = 'Sending notification...';
+      try {
+        const response = await fetch('/api/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, emails })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'The email could not be sent.');
+        status.textContent = 'Notification sent to Gmail for delivery. Continue when you are ready.';
+      } catch (error) {
+        console.error('Notification failed:', error);
+        status.textContent = error.message || 'The email could not be sent. Check the server and try again.';
+      } finally {
+        send.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Way Home | Drinks and check-in</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true">↗</span> way home</a>
+      <nav aria-label="Main navigation"><a href="index.html">Notify</a><a aria-current="page" href="drinks.html">Drinks &amp; check-in</a><a href="transport.html">Get home</a></nav>
+    </header>
+    <main>
+      <div class="eyebrow">02 / Keep track and check in</div>
+      <h1>Log your drinks.</h1>
+      <p class="lead">Enter your drinks and details for a rough BAC estimate, and try the optional one-minute attention check.</p>
+      <div class="notice"><strong>Don't fully trust the results.</strong> BAC estimates and attention questions cannot determine sobriety or driving ability. If you've been drinking, choose a sober ride, even if the estimate is below 0.08% or every answer is correct.</div>
+      <div class="grid">
+        <div class="stack">
+          <section class="card">
+            <h2>Add a drink</h2>
+            <form id="drink-form">
+              <label>Drink or brand <input id="drink-name" required maxlength="80" placeholder="e.g. lager or cocktail"></label>
+              <div class="fields">
+                <label>Amount (mL) <input id="drink-amount" type="number" min="1" max="10000" step="1" required placeholder="e.g. 355"></label>
+                <label>Alcohol by volume (%) <input id="drink-abv" type="number" min="0" max="100" step="any" required placeholder="e.g. 5"></label>
+              </div>
+              <label>Date and time consumed <input id="drink-time" type="datetime-local" required></label>
+              <button class="button" type="submit">+ Add drink</button>
+              <p id="drink-error" class="status" role="status"></p>
+            </form>
+            <p id="storage-status" class="status" role="status"></p>
+            <ul id="drink-list" class="drink-list" aria-label="Logged drinks"></ul>
+            <div id="total" class="result" aria-live="polite">No drinks logged yet.</div>
+            <p class="hint">Drinks and estimate details stay in this browser tab for this session and are not emailed. Close the tab to clear them.</p>
+          </section>
+
+          <section id="attention-check" class="card" aria-labelledby="check-heading">
+            <div class="timer-row"><h2 id="check-heading">One-minute attention check</h2><span id="timer" class="timer" aria-label="Time remaining">01:00</span></div>
+            <p class="muted">Optional: answer five questions in any order. Separating letters and numbers with spaces or commas is fine. Any incorrect or unanswered question, or running out of time, counts as not completing the check.</p>
+            <button id="start" class="button" type="button">Start one-minute check</button>
+            <form id="check-form" hidden>
+              <label>1. Type the letters C through H in order. <input id="letters" autocomplete="off"></label>
+              <label>2. Count backward from 20 to 8, subtracting 3 each time. <input id="count" autocomplete="off"></label>
+              <label>3. Continue the pattern: A1, B2, C3, ... (give the next two pairs). <input id="pattern" autocomplete="off"></label>
+              <label>4. What is 17 minus 8? <input id="math" inputmode="numeric" autocomplete="off"></label>
+              <label>5. Type the word GREEN backward. <input id="reverse" autocomplete="off"></label>
+              <button class="button" type="submit">Finish check</button>
+            </form>
+            <div id="check-result" class="result" role="status" aria-live="polite"></div>
+            <p class="hint">This is not a police sobriety test. Correct answers do not show that you are sober or safe to drive.</p>
+          </section>
+        </div>
+
+        <aside class="card soft">
+          <h2>Estimated BAC</h2>
+          <p>For a rough estimate, enter your weight and choose the body-water assumption used by this formula. It cannot account for individual differences.</p>
+          <div class="fields">
+            <label>Weight (kg) <input id="weight" type="number" min="30" max="300" step="0.1" placeholder="e.g. 70"></label>
+            <label>Formula assumption
+              <select id="distribution">
+                <option value="">Choose one</option>
+                <option value="0.68">Typically male (0.68)</option>
+                <option value="0.55">Typically female (0.55)</option>
+              </select>
+            </label>
+          </div>
+          <div id="bac" class="result" aria-live="polite">Add a drink and enter your details to calculate an estimate.</div>
+          <div id="assessment" class="notice" role="status" aria-live="polite">A low estimate or correct answers do not mean you can drive. If you've been drinking, choose a sober ride.</div>
+          <a class="button dark" href="transport.html">Find a ride home →</a>
+          <details>
+            <summary>How the estimate works</summary>
+            <p>The estimate uses a simplified Widmark formula: alcohol grams divided by body weight and the selected distribution factor, with an assumed elimination rate of 0.015 percentage points per hour. It assumes instant absorption and applies elimination between logged drinks. The displayed value is rounded upward to three decimal places.</p>
+            <p>Actual BAC can differ substantially or rise after your last drink. Food, medications, body composition, metabolism, incomplete entries, and other factors are not reliably accounted for. The 0.08% warning is not a legal or safety clearance.</p>
+          </details>
+        </aside>
+      </div>
+    </main>
+    <footer>Estimates and attention questions cannot determine whether you are safe to drive.</footer>
+  </div>
+  <script>
+    const key = 'way-home-drinks';
+    const detailsKey = 'way-home-bac-details';
+    const checkKey = 'way-home-check-result';
+    const list = document.getElementById('drink-list');
+    const total = document.getElementById('total');
+    const storageStatus = document.getElementById('storage-status');
+    const weight = document.getElementById('weight');
+    const distribution = document.getElementById('distribution');
+    const bacOutput = document.getElementById('bac');
+    const assessment = document.getElementById('assessment');
+    const checkResult = document.getElementById('check-result');
+    let drinks = [];
+    let lastCheck = null;
+    try {
+      const saved = sessionStorage.getItem(key);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (!Array.isArray(parsed) || !parsed.every((drink) =>
+          typeof drink.name === 'string' && typeof drink.time === 'string' &&
+          Number.isFinite(drink.amount) && drink.amount > 0 && drink.amount <= 10000 &&
+          Number.isFinite(drink.abv) && drink.abv >= 0 && drink.abv <= 100)) throw new Error('Invalid saved drink log');
+        drinks = parsed;
+      }
+      const details = JSON.parse(sessionStorage.getItem(detailsKey) || 'null');
+      if (details) {
+        weight.value = details.weight;
+        distribution.value = details.distribution;
+      }
+      const check = JSON.parse(sessionStorage.getItem(checkKey) || 'null');
+      if (check && Number.isInteger(check.matches) && check.matches >= 0 && check.matches <= 5 && typeof check.expired === 'boolean') lastCheck = check;
+    } catch (error) {
+      console.error('Could not restore session data:', error);
+      storageStatus.textContent = 'Could not restore saved data. Check your drink entries and details before using the estimate.';
+    }
+    function save(keyToSave, value) {
+      try {
+        sessionStorage.setItem(keyToSave, JSON.stringify(value));
+      } catch (error) {
+        console.error('Could not save session data:', error);
+        storageStatus.textContent = 'Could not save this session in your browser. Information may be lost when you leave this page.';
+      }
+    }
+    function render() {
+      list.replaceChildren();
+      drinks.forEach((drink, index) => {
+        const item = document.createElement('li');
+        const description = document.createElement('span');
+        const time = drink.time.includes('T') ? drink.time.replace('T', ' ') : `${drink.time} (date missing; remove and re-add)`;
+        description.textContent = `${drink.name} · ${drink.amount} mL · ${drink.abv}% ABV · ${time}`;
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'text-button';
+        remove.textContent = 'Remove';
+        remove.setAttribute('aria-label', `Remove ${drink.name}`);
+        remove.addEventListener('click', () => { drinks.splice(index, 1); save(key, drinks); render(); });
+        item.append(description, remove);
+        list.append(item);
+      });
+      const grams = drinks.reduce((sum, drink) => sum + drink.amount * drink.abv / 100 * 0.789, 0);
+      total.textContent = drinks.length ? `Estimated alcohol in logged drinks: ${grams.toFixed(1)} g (${(grams / 14).toFixed(1)} US standard drinks).` : 'No drinks logged yet.';
+      updateEstimate();
+    }
+    function updateEstimate() {
+      let displayedBac = null;
+      const bodyWeight = Number(weight.value);
+      const factor = Number(distribution.value);
+      const now = Date.now();
+      const timedDrinks = drinks.map((drink) => ({
+        ...drink,
+        timestamp: drink.time.includes('T') ? new Date(drink.time).getTime() : NaN
+      }));
+      if (!drinks.length) {
+        bacOutput.textContent = 'Add a drink and enter your details to calculate an estimate.';
+      } else if (timedDrinks.some((drink) => !Number.isFinite(drink.timestamp) || drink.timestamp > now)) {
+        bacOutput.textContent = 'Every drink needs a valid past date and time. Remove and re-add any entries with a missing or future date.';
+      } else if (!weight.value || !weight.validity.valid || bodyWeight < 30 || bodyWeight > 300 || ![0.55, 0.68].includes(factor)) {
+        bacOutput.textContent = 'Enter a weight from 30 to 300 kg and choose a formula assumption to calculate an estimate.';
+      } else {
+        timedDrinks.sort((a, b) => a.timestamp - b.timestamp);
+        let estimate = 0;
+        let previousTime = timedDrinks[0].timestamp;
+        for (const drink of timedDrinks) {
+          estimate = Math.max(0, estimate - 0.015 * (drink.timestamp - previousTime) / 3600000);
+          estimate += (drink.amount * drink.abv / 100 * 0.789) / (bodyWeight * 1000 * factor) * 100;
+          previousTime = drink.timestamp;
+        }
+        estimate = Math.max(0, estimate - 0.015 * (now - previousTime) / 3600000);
+        displayedBac = Math.ceil(estimate * 1000 - 1e-10) / 1000;
+        bacOutput.textContent = `Estimated BAC: ${displayedBac.toFixed(3)}% (rounded upward). This is not a measurement and can be substantially wrong.`;
+      }
+      const reasons = [];
+      if (displayedBac !== null && displayedBac >= 0.08) reasons.push('the estimated BAC is at least 0.08%');
+      if (lastCheck && (lastCheck.expired || lastCheck.matches < 5)) reasons.push('the attention check was not completed successfully');
+      assessment.textContent = reasons.length
+        ? `Unsafe to drive: ${reasons.join(' and ')}. Choose a sober ride. These tools cannot measure actual impairment.`
+        : 'A low estimate or correct answers do not mean you can drive. If you have been drinking, choose a sober ride.';
+    }
+    document.getElementById('drink-form').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const name = document.getElementById('drink-name').value.trim();
+      const time = document.getElementById('drink-time').value;
+      const timestamp = new Date(time).getTime();
+      const error = document.getElementById('drink-error');
+      if (!name || !Number.isFinite(timestamp) || timestamp > Date.now()) {
+        error.textContent = 'Enter a drink name and a valid date and time that is not in the future.';
+        return;
+      }
+      error.textContent = '';
+      drinks.push({ name, amount: Number(document.getElementById('drink-amount').value), abv: Number(document.getElementById('drink-abv').value), time });
+      save(key, drinks);
+      render();
+      event.currentTarget.reset();
+    });
+    for (const input of [weight, distribution]) {
+      input.addEventListener('input', () => {
+        save(detailsKey, { weight: weight.value, distribution: distribution.value });
+        updateEstimate();
+      });
+    }
+
+    const start = document.getElementById('start');
+    const form = document.getElementById('check-form');
+    const timer = document.getElementById('timer');
+    let deadline = 0;
+    let interval;
+    let active = false;
+    function renderCheck() {
+      if (!lastCheck) return;
+      checkResult.textContent = `${lastCheck.expired ? 'Time is up.' : 'Check finished.'} ${lastCheck.matches} of 5 answers matched. This result cannot determine sobriety or driving ability. If you've been drinking, choose a sober ride.`;
+    }
+    function finish(expired) {
+      if (!active) return;
+      active = false;
+      clearInterval(interval);
+      const normalize = (id) => document.getElementById(id).value.toUpperCase().replace(/[\s,.-]/g, '');
+      const answers = [['letters', 'CDEFGH'], ['count', '201714118'], ['pattern', 'D4E5'], ['math', '9'], ['reverse', 'NEERG']];
+      lastCheck = { expired, matches: answers.filter(([id, answer]) => normalize(id) === answer).length };
+      save(checkKey, lastCheck);
+      renderCheck();
+      updateEstimate();
+      form.hidden = true;
+      start.hidden = false;
+      start.textContent = 'Start again';
+      if (expired) timer.textContent = '00:00';
+    }
+    function updateTimer() {
+      const remaining = Math.max(0, Math.ceil((deadline - performance.now()) / 1000));
+      timer.textContent = `${String(Math.floor(remaining / 60)).padStart(2, '0')}:${String(remaining % 60).padStart(2, '0')}`;
+      if (remaining === 0) finish(true);
+    }
+    start.addEventListener('click', () => {
+      form.reset();
+      form.hidden = false;
+      start.hidden = true;
+      active = true;
+      deadline = performance.now() + 60000;
+      timer.textContent = '01:00';
+      interval = setInterval(updateTimer, 200);
+      document.getElementById('letters').focus();
+    });
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      finish(performance.now() >= deadline);
+    });
+    renderCheck();
+    render();
+    setInterval(updateEstimate, 60000);
+  </script>
+</body>
+</html>
