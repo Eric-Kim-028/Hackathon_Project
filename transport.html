@@ -11,7 +11,7 @@
   <div class="shell">
     <header>
       <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true">↗</span> way home</a>
-      <nav aria-label="Main navigation"><a href="index.html">Notify</a><a href="drinks.html">Drinks &amp; check-in</a><a aria-current="page" href="transport.html">Get home</a></nav>
+      <nav aria-label="Main navigation"><a href="index.html">Home</a><a href="drinks.html">Drinks &amp; check-in</a><a aria-current="page" href="transport.html">Get home</a></nav>
     </header>
     <main>
       <div class="eyebrow">04 / Find your way</div>
@@ -22,6 +22,16 @@
           <h2>Request a ride</h2>
           <p>Open Uber to choose your pickup and destination. Uber handles driver matching and ride confirmation.</p>
           <a class="button dark" href="https://m.uber.com/go/home?marketing_vistor_id=7db13235-b15a-43a5-a75c-8304fd1de34e&amp;uclick_id=2bca3c75-97f8-47c1-a654-25a5f0aeede1%2Fen" target="_blank" rel="noopener noreferrer">Open Uber ↗</a>
+          <form id="friend-ride-form" class="directions" action="https://mail.google.com/mail/" method="get" target="_blank" rel="noopener noreferrer">
+            <input type="hidden" name="view" value="cm">
+            <input type="hidden" name="fs" value="1">
+            <input type="hidden" name="su" value="Could you pick me up?">
+            <input id="friend-ride-message" type="hidden" name="body">
+            <label>Trusted friend or family member's email <input type="email" name="to" required autocomplete="email" placeholder="name@gmail.com"></label>
+            <label>Where should they pick you up? <input id="pickup-location" type="text" required pattern=".*\S.*" title="Enter a pickup location." placeholder="Address or venue"></label>
+            <button class="button secondary" type="submit">Open a Gmail draft ↗</button>
+            <p class="hint">Gmail will open a draft for you to review and send. This page doesn't save your entries or send the email automatically.</p>
+          </form>
         </section>
         <section class="card">
           <h2>Find public transportation</h2>
@@ -39,5 +49,12 @@
     </main>
     <footer>If you've been drinking, don't drive. Ask a trusted person for help if a ride or transit isn't available.</footer>
   </div>
+  <script>
+    document.getElementById('friend-ride-form').addEventListener('submit', () => {
+      const pickupLocation = document.getElementById('pickup-location').value.trim();
+      document.getElementById('friend-ride-message').value =
+        `Could you please pick me up at ${pickupLocation}? I need a sober ride home.`;
+    });
+  </script>
 </body>
 </html>

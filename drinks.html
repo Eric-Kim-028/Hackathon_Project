@@ -10,13 +10,13 @@
   <div class="shell">
     <header>
       <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true">↗</span> way home</a>
-      <nav aria-label="Main navigation"><a href="index.html">Notify</a><a aria-current="page" href="drinks.html">Drinks &amp; check-in</a><a href="transport.html">Get home</a></nav>
+      <nav aria-label="Main navigation"><a href="index.html">Home</a><a aria-current="page" href="drinks.html">Drinks &amp; check-in</a><a href="transport.html">Get home</a></nav>
     </header>
     <main>
       <div class="eyebrow">02 / Keep track and check in</div>
       <h1>Log your drinks.</h1>
       <p class="lead">Enter your drinks and details for a rough BAC estimate, and try the optional one-minute attention check.</p>
-      <div class="notice"><strong>Don't fully trust the results.</strong> BAC estimates and attention questions cannot determine sobriety or driving ability. If you've been drinking, choose a sober ride, even if the estimate is below 0.08% or every answer is correct.</div>
+      <div class="notice notice-emphasis"><strong>Don't fully trust the results.</strong> BAC estimates and attention questions cannot determine sobriety or driving ability. If you've been drinking, choose a sober ride, even if the estimate is below 0.08% or every answer is correct.</div>
       <div class="grid">
         <div class="stack">
           <section class="card">
@@ -34,7 +34,7 @@
             <p id="storage-status" class="status" role="status"></p>
             <ul id="drink-list" class="drink-list" aria-label="Logged drinks"></ul>
             <div id="total" class="result" aria-live="polite">No drinks logged yet.</div>
-            <p class="hint">Drinks and estimate details stay in this browser tab for this session and are not emailed. Close the tab to clear them.</p>
+            <p class="hint">Drinks and estimate details stay in this browser tab for this session. Close the tab to clear them.</p>
           </section>
 
           <section id="attention-check" class="card" aria-labelledby="check-heading">
@@ -173,9 +173,9 @@
       }
       const reasons = [];
       if (displayedBac !== null && displayedBac >= 0.08) reasons.push('the estimated BAC is at least 0.08%');
-      if (lastCheck && (lastCheck.expired || lastCheck.matches < 5)) reasons.push('the attention check was not completed successfully');
+      if (lastCheck && (lastCheck.expired || lastCheck.matches < 5)) reasons.push('the attention check was not completed with 5 of 5 correct answers within one minute');
       assessment.textContent = reasons.length
-        ? `Unsafe to drive: ${reasons.join(' and ')}. Choose a sober ride. These tools cannot measure actual impairment.`
+        ? `It may be unsafe to drive because ${reasons.join(' and ')}. These results cannot determine whether you are impaired. Do not drive; choose a sober ride.`
         : 'A low estimate or correct answers do not mean you can drive. If you have been drinking, choose a sober ride.';
     }
     document.getElementById('drink-form').addEventListener('submit', (event) => {
